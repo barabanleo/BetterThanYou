@@ -245,6 +245,8 @@ class Game():
 
     def step(self, direction):
 
+        # Pour mouvement aléatoire
+        direction = random.randrange(0, 3)
 
         currentmovedir = self.snake.movedir
         if direction == 0:
@@ -371,7 +373,7 @@ class Game():
             position = self.BlockPositions[i]
             self.grid[position[1] + 1, position[0] + 1] = 4
 
-        return self.lose
+        return self.getObservation(),self.lose
 
     def render(self):
         # score
@@ -390,3 +392,172 @@ class Game():
 
         # waiting
         self.clock.tick(FPS)
+
+    #Methode pour ajouter OBSERVATEUR snake
+    def getObservation(self):
+        # x = BodyPositions[0][0]
+        # y = BodyPositions[0][1]
+        x = self.snake.tilepos[0]
+        y = self.snake.tilepos[1]
+
+        def loop(x_increment, y_increment, head_x, head_y):
+
+            # adjusting tuple coordinate to array base 0 coordinate
+            head_x = head_x + 1
+            head_y = head_y + 1
+            distance = 0
+            base_distance = math.sqrt((x_increment ** 2) + (y_increment ** 2))
+            food = -1
+            body = -1
+            wall = -1
+
+            # moving out of the head of the snake
+            x = head_x + x_increment
+            y = head_y + y_increment
+
+            max_x = len(self.grid[0])
+            max_y = len(self.grid)
+            while (x > -1) and (y > -1) and (x < max_x) and (y < max_y):
+                if self.grid[y, x] == 3:
+                    if body == -1:
+                        body = distance
+                if self.grid[y, x] == 1:
+                    if food == -1:
+                        food = distance
+
+                distance += base_distance
+                # moving further
+
+                if self.grid[y, x] == 4:
+                    if wall == -1:
+                        wall = distance
+
+                x += x_increment
+                y += y_increment
+            # wall = distance
+            # maximum_distance = 28.284
+            maximum_distance = math.sqrt((SCREENTILES[0] ** 2) + (SCREENTILES[1] ** 2))
+
+            if body == -1:
+                body = maximum_distance
+
+            if food == -1:
+                food = maximum_distance
+
+            return [wall, food, body]
+
+        if self.snake.movedir == 'left':
+            observation = np.array([
+                # left
+                loop(-1, 0, x, y),
+
+                # up left
+                loop(-1, -1, x, y),
+
+                # up
+                loop(0, -1, x, y),
+
+                # up right
+                loop(1, -1, x, y),
+
+                # right
+                loop(1, 0, x, y),
+
+                # down right
+                loop(1, 1, x, y),
+
+                # down
+                loop(0, 1, x, y),
+
+                # down left
+                loop(-1, 1, x, y),
+
+            ])
+        elif self.snake.movedir == 'right':
+            observation = np.array([
+                # right
+                loop(1, 0, x, y),
+
+                # down right
+                loop(1, 1, x, y),
+
+                # down
+                loop(0, 1, x, y),
+
+                # down left
+                loop(-1, 1, x, y),
+
+                # left
+                loop(-1, 0, x, y),
+
+                # up left
+                loop(-1, -1, x, y),
+
+                # up
+                loop(0, -1, x, y),
+
+                # up right
+                loop(1, -1, x, y),
+
+            ])
+        elif self.snake.movedir == 'up':
+            observation = np.array([
+                # up
+                loop(0, -1, x, y),
+
+                # up right
+                loop(1, -1, x, y),
+
+                # right
+                loop(1, 0, x, y),
+
+                # down right
+                loop(1, 1, x, y),
+
+                # down
+                loop(0, 1, x, y),
+
+                # down left
+                loop(-1, 1, x, y),
+
+                # left
+                loop(-1, 0, x, y),
+
+                # up left
+                loop(-1, -1, x, y),
+
+            ])
+        elif self.snake.movedir == 'down':
+            observation = np.array([
+
+                # down
+                loop(0, 1, x, y),
+
+                # down left
+                loop(-1, 1, x, y),
+
+                # left
+                loop(-1, 0, x, y),
+
+                # up left
+                loop(-1, -1, x, y),
+
+                # up
+                loop(0, -1, x, y),
+
+                # up right
+                loop(1, -1, x, y),
+
+                # right
+                loop(1, 0, x, y),
+
+                # down right
+                loop(1, 1, x, y),
+            ])
+
+        observation.shape = (24,)
+        scale = math.sqrt(SCREENTILES[0] ** 2 + SCREENTILES[1] ** 2)
+        observation_scaled = 1 - 2 * observation / scale
+        return observation_scaled
+        # return observation
+
