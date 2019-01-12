@@ -1,0 +1,2 @@
+# BetterThanYou
+A good AI
